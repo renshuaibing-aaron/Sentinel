@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.slots.block.flow;
 
 import java.util.ArrayList;
@@ -46,9 +31,20 @@ import com.alibaba.csp.sentinel.property.SentinelProperty;
  */
 public class FlowRuleManager {
 
+    /**
+     * 用来保存所有的流控规则，key为资源名称，value为一个list对象。因为是
+     * 全局共享的，使用的是ConcurrentHashMap。一个资源可以有多个流控规则，它们是通过链表保存，比如一个规则通过QPS控制，一个是通过线程数控制
+     */
     private static final Map<String, List<FlowRule>> flowRules = new ConcurrentHashMap<String, List<FlowRule>>();
 
+    /**
+     * 一个监听器，当规则变化，进行相应的操作
+     */
     private static final FlowPropertyListener LISTENER = new FlowPropertyListener();
+
+    /**
+     * 此类包含配置的当前值，并负责在更新配置时通知所有属性监听器
+     */
     private static SentinelProperty<List<FlowRule>> currentProperty = new DynamicSentinelProperty<List<FlowRule>>();
 
     @SuppressWarnings("PMD.ThreadPoolCreationRule")
@@ -56,6 +52,8 @@ public class FlowRuleManager {
         new NamedThreadFactory("sentinel-metrics-record-task", true));
 
     static {
+
+        //添加属性监听器，启动计划线程
         currentProperty.addListener(LISTENER);
         SCHEDULER.scheduleAtFixedRate(new MetricTimerListener(), 0, 1, TimeUnit.SECONDS);
     }

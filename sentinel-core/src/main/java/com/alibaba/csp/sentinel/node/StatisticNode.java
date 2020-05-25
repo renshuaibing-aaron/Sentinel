@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.node;
 
 import com.alibaba.csp.sentinel.node.metric.MetricNode;
@@ -90,6 +75,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatisticNode implements Node {
 
     /**
+     * 是统计一秒内的指标数据数据的
      * Holds statistics of the recent {@code INTERVAL} seconds. The {@code INTERVAL} is divided into time spans
      * by given {@code sampleCount}.
      */
@@ -97,6 +83,8 @@ public class StatisticNode implements Node {
         IntervalProperty.INTERVAL);
 
     /**
+     * 统计一分钟的数据
+     * todo  这里说明sentinel统计了秒 分 两个维度的数据
      * Holds statistics of the recent 60 seconds. The windowLengthInMs is deliberately set to 1000 milliseconds,
      * meaning each bucket per second, in this way we can get accurate statistics of each second.
      */
@@ -244,7 +232,9 @@ public class StatisticNode implements Node {
 
     @Override
     public void addPassRequest(int count) {
+        //统计一秒内的指标数据数据
         rollingCounterInSecond.addPass(count);
+        //统计一分钟的数据
         rollingCounterInMinute.addPass(count);
     }
 

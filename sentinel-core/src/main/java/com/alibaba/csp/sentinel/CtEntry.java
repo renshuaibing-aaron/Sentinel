@@ -37,6 +37,7 @@ class CtEntry extends Entry {
     protected Context context;
 
     CtEntry(ResourceWrapper resourceWrapper, ProcessorSlot<Object> chain, Context context) {
+
         super(resourceWrapper);
         this.chain = chain;
         this.context = context;
@@ -49,6 +50,8 @@ class CtEntry extends Entry {
         if (context instanceof NullContext) {
             return;
         }
+
+        //回顾Context的构造过程，curEntry属性在第一次构造并没有给它赋值，因此为null。然后属性curEntry为当前Entry对象
         this.parent = context.getCurEntry();
         if (parent != null) {
             ((CtEntry)parent).child = this;

@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.context;
 
 import com.alibaba.csp.sentinel.Entry;
@@ -24,6 +9,10 @@ import com.alibaba.csp.sentinel.node.Node;
 import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
 
 /**
+ *
+ *  todo  Context即上下文，一个上下文只能通过两种方式创建，一是暴露出来的ContextUtil.enter() 方式，
+ *   而是内部ContextUtil的一个子类创建，这是默认的内部创建方式，为一次访问资源创建上下文。
+ *   Context是保存在ThradLocal中。可以把Conetext理解当一次访问资源的过程。Context中维护着当前调用链的元数据
  * This class holds metadata of current invocation:<br/>
  *
  * <ul>
@@ -61,17 +50,17 @@ public class Context {
      */
     private final String name;
 
-    /**
+    /**当前调用链的入口节点,即最外层的entry
      * The entrance node of current invocation tree.
      */
     private DefaultNode entranceNode;
 
-    /**
+    /** 调用链的当前节点
      * Current processing entry.
      */
     private Entry curEntry;
 
-    /**
+    /**当前调用链的调用源
      * The origin of this context (usually indicate different invokers, e.g. service consumer name or origin IP).
      */
     private String origin = "";

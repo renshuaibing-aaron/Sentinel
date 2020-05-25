@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.slots.statistic.metric;
 
 import java.util.ArrayList;
@@ -29,7 +14,7 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
  * The basic metric class in Sentinel using a {@link BucketLeapArray} internal.
- *
+ *它相当于是对底层指标的代理封装
  * @author jialiang.linjl
  * @author Eric Zhao
  */
@@ -41,6 +26,13 @@ public class ArrayMetric implements Metric {
         this.data = new OccupiableBucketLeapArray(sampleCount, intervalInMs);
     }
 
+    /**
+     * OccupiableBucketLeapArray和BucketLeapArray数据结构保存了实时的指标数据，
+     * 简单的说是一个数组,数组元素是WindowWrap(窗口桶)。这两个类都继承自LeapArray类
+     * @param sampleCount
+     * @param intervalInMs
+     * @param enableOccupy
+     */
     public ArrayMetric(int sampleCount, int intervalInMs, boolean enableOccupy) {
         if (enableOccupy) {
             this.data = new OccupiableBucketLeapArray(sampleCount, intervalInMs);
@@ -241,7 +233,10 @@ public class ArrayMetric implements Metric {
 
     @Override
     public void addPass(int count) {
+        System.out.println("【addPass】");
+        // 获取当前窗口
         WindowWrap<MetricBucket> wrap = data.currentWindow();
+        //对MetricBucket +1 操作
         wrap.value().addPass(count);
     }
 

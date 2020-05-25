@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.slotchain;
 
 import com.alibaba.csp.sentinel.context.Context;
@@ -25,9 +10,11 @@ public class DefaultProcessorSlotChain extends ProcessorSlotChain {
 
     AbstractLinkedProcessorSlot<?> first = new AbstractLinkedProcessorSlot<Object>() {
 
+        //todo 注意这个方法被重写了
         @Override
         public void entry(Context context, ResourceWrapper resourceWrapper, Object t, int count, boolean prioritized, Object... args)
             throws Throwable {
+            System.out.println("【DefaultProcessorSlotChain#first#entry】");
             super.fireEntry(context, resourceWrapper, t, count, prioritized, args);
         }
 
@@ -37,6 +24,7 @@ public class DefaultProcessorSlotChain extends ProcessorSlotChain {
         }
 
     };
+
     AbstractLinkedProcessorSlot<?> end = first;
 
     @Override
@@ -72,6 +60,8 @@ public class DefaultProcessorSlotChain extends ProcessorSlotChain {
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, Object t, int count, boolean prioritized, Object... args)
         throws Throwable {
+        System.out.println("【DefaultProcessorSlotChain#entry】");
+        //也就是说，DefaultProcessorSlotChain的entry实际是执行的first属性的transformEntry方法
         first.transformEntry(context, resourceWrapper, t, count, prioritized, args);
     }
 

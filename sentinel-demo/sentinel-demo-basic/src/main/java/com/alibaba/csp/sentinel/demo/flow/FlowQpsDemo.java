@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.demo.flow;
 
 import java.util.ArrayList;
@@ -29,11 +14,14 @@ import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 
+import static com.alibaba.csp.sentinel.slots.block.RuleConstant.CONTROL_BEHAVIOR_DEFAULT;
+
 /**
  * @author jialiang.linjl
  */
 public class FlowQpsDemo {
 
+    // 资源名
     private static final String KEY = "abc";
 
     private static AtomicInteger pass = new AtomicInteger();
@@ -58,20 +46,40 @@ public class FlowQpsDemo {
 
     }
 
+    /**
+     * 流量控制规则
+     */
     private static void initFlowQpsRule() {
+        // 规则对应的类为FlowRule，用List保存，可以有多个规则
         List<FlowRule> rules = new ArrayList<FlowRule>();
         FlowRule rule1 = new FlowRule();
+        //setResource(KEY)方法是设置资源名，也就是限流规则的作用对象，更通俗的讲：本条规则对哪个资源生效。
         rule1.setResource(KEY);
+
+        //count是限流阈值，当我们定义的是流量控制规则是根据QPS进行限流时，它表示QPS的阈值，当然如果是根据线程数限流，它表示线程数。
         // set limit qps to 20
         rule1.setCount(20);
+
+
+        // 设置限流类型：根据qps
+        //grade表示限流阈值类型，是按照 QPS 还是线程数默认根据 QPS
         rule1.setGrade(RuleConstant.FLOW_GRADE_QPS);
+
+       //controlBehavior表示发流量控制模式，默认超过阈值是直接拒绝，
+        // 如果设置为匀速器模式等待则还需要设置maxQueueingTimeMs（最大排队时间）还有一种是冷启动方式
+        /**
+         * 根据线程数的流量限制也是类似。只是规则设置代码不同。还有一个问题就是根据线程数的流量限制中，Sentinel没有对线程的控制权限，内部只是对请求线程的统计。如果超出阈值，新的请求会被立即拒绝。但是根据QPS进行流量控制中可以有多个选择：1. 直接拒绝（CONTROL_BEHAVIOR_DEFAULT），2. 慢启动也叫冷启动（CONTROL_BEHAVIOR_WARM_UP）过"冷启动"，让通过的流量缓慢增加，在一定时间内逐渐增加到阈值上限，给冷系统一个预热的时间，避免冷系统被压垮的情况。，3. 匀速通过（CONTROL_BEHAVIOR_RATE_LIMITER），这种方式严格控制了请求通过的间隔时间，也即是让请求以均匀的速度通过，内部实现是漏桶算法
+         */
+        rule1.setControlBehavior(CONTROL_BEHAVIOR_DEFAULT);
         rule1.setLimitApp("default");
         rules.add(rule1);
+
+        //加载限流的规则
         FlowRuleManager.loadRules(rules);
     }
 
     private static void simulateTraffic() {
-        for (int i = 0; i < threadCount; i++) {
+        for (int i = 0; i < 1; i++) {
             Thread t = new Thread(new RunTask());
             t.setName("simulate-traffic-Task");
             t.start();
@@ -136,6 +144,8 @@ public class FlowQpsDemo {
                 Entry entry = null;
 
                 try {
+                    //这个方法会去申请一个entry，如果能够申请成功，则说明没有被限流，否则会抛出BlockException，表明已经被限流了
+                    //
                     entry = SphU.entry(KEY);
                     // token acquired, means pass
                     pass.addAndGet(1);
@@ -156,6 +166,7 @@ public class FlowQpsDemo {
                 } catch (InterruptedException e) {
                     // ignore
                 }
+                stop=true;
             }
         }
     }

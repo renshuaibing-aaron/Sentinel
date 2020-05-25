@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.node;
 
 import java.util.HashSet;
@@ -26,6 +11,9 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
 
 /**
+ *
+ * todo   defaultNode是记录某一个资源调用的实时数据的，entry的curNode指向一个defaultNode。
+ *  每个defaultNode都关联着一个资源和clusterNode，有着相同资源的defaultNode关联着同一个clusterNode
  * <p>
  * A {@link Node} used to hold statistics for specific resource name in the specific context.
  * Each distinct resource in each distinct {@link Context} will corresponding to a {@link DefaultNode}.
@@ -138,7 +126,11 @@ public class DefaultNode extends StatisticNode {
 
     @Override
     public void addPassRequest(int count) {
+        System.out.println("【DefaultNode#addPassRequest】");
+        //这里做了两件事，增加自身保存请求数。增加关联的clusterNode的请求数
+        //这里就体现出clusterNode保存一个资源的指标数据作用了
         super.addPassRequest(count);
+        //注意clusterNode 是StatisticNode 类型的，因此不会存在无限递归的情况
         this.clusterNode.addPassRequest(count);
     }
 

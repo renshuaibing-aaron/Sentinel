@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.slots.nodeselector;
 
 import com.alibaba.csp.sentinel.context.Context;
@@ -127,10 +112,23 @@ import java.util.Map;
 public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
 
     /**
+     * 以Context name 作为key保存DefaultNode
      * {@link DefaultNode}s of the same resource in different context.
      */
     private volatile Map<String, DefaultNode> map = new HashMap<String, DefaultNode>(10);
 
+    /**
+     * 1获取当前上下文对应的DefaultNode，如果没有的话会为当前的调用新生成一个DefaultNode节点，它的作用是对资源进行各种统计度量以便进行流控；
+     * 2将新创建的DefaultNode节点，添加到context中，作为curNode（entrance node / default node）的子节点；
+     * 3将DefaultNode节点，添加到Entry中，作为curNode
+     * @param context         current {@link Context}
+     * @param resourceWrapper current resource
+     * @param obj
+     * @param count           tokens needed
+     * @param prioritized     whether the entry is prioritized
+     * @param args            parameters of the original call
+     * @throws Throwable
+     */
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, Object obj, int count, boolean prioritized, Object... args)
         throws Throwable {
@@ -152,11 +150,13 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
          * The answer is all {@link DefaultNode}s with same resource name share one
          * {@link ClusterNode}. See {@link ClusterBuilderSlot} for detail.
          */
+        // 第一次获取为空
         DefaultNode node = map.get(context.getName());
         if (node == null) {
             synchronized (this) {
                 node = map.get(context.getName());
                 if (node == null) {
+                    // 新创建一个DefaultNode
                     node = new DefaultNode(resourceWrapper, null);
                     HashMap<String, DefaultNode> cacheMap = new HashMap<String, DefaultNode>(map.size());
                     cacheMap.putAll(map);
@@ -168,8 +168,9 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
 
             }
         }
-
+        // 设置Entry当前节点
         context.setCurNode(node);
+        // 触发下一个slot
         fireEntry(context, resourceWrapper, node, count, prioritized, args);
     }
 

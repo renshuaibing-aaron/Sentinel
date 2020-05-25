@@ -48,6 +48,7 @@ public class FlowRuleChecker {
         }
         Collection<FlowRule> rules = ruleProvider.apply(resource.getName());
         if (rules != null) {
+            //这里遍历所有的规则，如果不能通过跑出FlowException,继续跟进passCheck
             for (FlowRule rule : rules) {
                 if (!canPassCheck(rule, context, node, count, prioritized)) {
                     throw new FlowException(rule.getLimitApp(), rule);
@@ -63,6 +64,7 @@ public class FlowRuleChecker {
 
     public boolean canPassCheck(/*@NonNull*/ FlowRule rule, Context context, DefaultNode node, int acquireCount,
                                                     boolean prioritized) {
+        //// limitApp 默认是一个 “default”
         String limitApp = rule.getLimitApp();
         if (limitApp == null) {
             return true;
@@ -77,11 +79,15 @@ public class FlowRuleChecker {
 
     private static boolean passLocalCheck(FlowRule rule, Context context, DefaultNode node, int acquireCount,
                                           boolean prioritized) {
+        //根据调用方和上下文以及FlowRule所配置的Strategy来获取应该用于限流的统计Node，默认获取的是前面构造的ClusterNode
         Node selectedNode = selectNodeByRequesterAndStrategy(rule, context, node);
+        // 如果没有合乎规则的Node，则直接返回true，表示通过
         if (selectedNode == null) {
             return true;
         }
-
+        // 如果存在统计Node，则通过controller来判断是否需要限流
+        // 这个controller通过设置FlowRule的controllerBehavior来区分
+        // 默认的实现有：0. default, 1. warm up, 2. rate limiter
         return rule.getRater().canPass(selectedNode, acquireCount, prioritized);
     }
 

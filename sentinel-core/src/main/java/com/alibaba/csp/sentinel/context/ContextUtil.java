@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.context;
 
 import java.util.HashMap;
@@ -63,9 +48,14 @@ public class ContextUtil {
     }
 
     private static void initDefaultContext() {
+
+
         String defaultContextName = Constants.CONTEXT_DEFAULT_NAME;
+        // 构建第一个EntranceNode
         EntranceNode node = new EntranceNode(new StringResourceWrapper(defaultContextName, EntryType.IN), null);
+        // 添加至ROOT下
         Constants.ROOT.addChild(node);
+        // 放置缓存，这个是全局共享的缓存，key为ContextName,value为EntranceNode
         contextNameNodeMap.put(defaultContextName, node);
     }
 
@@ -110,17 +100,23 @@ public class ContextUtil {
      * @return The invocation context of the current thread
      */
     public static Context enter(String name, String origin) {
+        System.out.println(" 【创建Context】"+name+origin);
         if (Constants.CONTEXT_DEFAULT_NAME.equals(name)) {
             throw new ContextNameDefineException(
                 "The " + Constants.CONTEXT_DEFAULT_NAME + " can't be permit to defined!");
         }
+
         return trueEnter(name, origin);
     }
 
     protected static Context trueEnter(String name, String origin) {
+
+        // contextHolder为保存Conext的ThreadLocal对象
         Context context = contextHolder.get();
         if (context == null) {
             Map<String, DefaultNode> localCacheNameMap = contextNameNodeMap;
+            // 从myEnter方法进来的，获取的node一定不为空，上面的初始化操作已经添加进去默认的entrancenode
+            // 那什么情况下可能为空呢? 外部显示是调用Context.enter方法，输入的key不允许为CONTEXT_DEFAULT_NAME的值，其他值得话第一次调用肯定为null
             DefaultNode node = localCacheNameMap.get(name);
             if (node == null) {
                 if (localCacheNameMap.size() > Constants.MAX_CONTEXT_NAME_SIZE) {
@@ -150,6 +146,7 @@ public class ContextUtil {
                     }
                 }
             }
+            // 将获取到的entrancenode用来构造一个Conext
             context = new Context(node, name);
             context.setOrigin(origin);
             contextHolder.set(context);

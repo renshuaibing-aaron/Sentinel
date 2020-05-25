@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel;
 
 import com.alibaba.csp.sentinel.util.TimeUtil;
@@ -22,6 +7,8 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.context.Context;
 
 /**
+ * todo 代表一次对资源的访问，每访问一个资源都会创建一个Entry
+ *   entry中保存了本次执行访问资源的一些基本信息
  * Each {@link SphU}#entry() will return an {@link Entry}. This class holds information of current invocation:<br/>
  *
  * <ul>
@@ -52,17 +39,24 @@ public abstract class Entry implements AutoCloseable {
 
     private static final Object[] OBJECTS0 = new Object[0];
 
+    //当前Entry的创建时间，主要用来后期计算rt
     private long createTime;
+
+    //当前Entry所关联的node，该node主要是记录了当前context下该资源的统计信息
     private Node curNode;
     /**
+     * 当前Entry的调用来源，通常是调用方的应用名称，在ClusterBuilderSlot.entry()方法中设置的
      * {@link Node} of the specific origin, Usually the origin is the Service Consumer.
      */
     private Node originNode;
     private Throwable error;
+
+    //当前Entry访问的资源
     protected ResourceWrapper resourceWrapper;
 
     public Entry(ResourceWrapper resourceWrapper) {
         this.resourceWrapper = resourceWrapper;
+        // 创建时间，用于计算RT
         this.createTime = TimeUtil.currentTimeMillis();
     }
 

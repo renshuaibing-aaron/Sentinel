@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.slots.statistic.base;
 
 import java.util.ArrayList;
@@ -39,9 +24,12 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
  * @author Carpenter Lee
  */
 public abstract class LeapArray<T> {
-
+    // 单个窗口桶的时间长度(以毫秒为单位)
     protected int windowLengthInMs;
+
+    // 数组长度，即窗口的个数
     protected int sampleCount;
+    // LeapArray的总时间跨度，以秒为单位
     protected int intervalInMs;
 
     protected final AtomicReferenceArray<WindowWrap<T>> array;
@@ -61,11 +49,13 @@ public abstract class LeapArray<T> {
         AssertUtil.isTrue(sampleCount > 0, "bucket count is invalid: " + sampleCount);
         AssertUtil.isTrue(intervalInMs > 0, "total time interval of the sliding window should be positive");
         AssertUtil.isTrue(intervalInMs % sampleCount == 0, "time span needs to be evenly divided");
-
+        // 单个窗口桶的时间长度(以毫秒为单位)
         this.windowLengthInMs = intervalInMs / sampleCount;
+        // LeapArray的总时间跨度，以秒为单位
         this.intervalInMs = intervalInMs;
+        // 数组长度，即窗口的个数
         this.sampleCount = sampleCount;
-
+        // 数组元素为WindowWrap，WindowWrap保存了MetricBucket，在它内部才保存真正的指标数据
         this.array = new AtomicReferenceArray<>(sampleCount);
     }
 
