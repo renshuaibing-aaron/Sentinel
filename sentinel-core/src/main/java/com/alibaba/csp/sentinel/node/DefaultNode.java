@@ -14,6 +14,7 @@ import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
  *
  * todo   defaultNode是记录某一个资源调用的实时数据的，entry的curNode指向一个defaultNode。
  *  每个defaultNode都关联着一个资源和clusterNode，有着相同资源的defaultNode关联着同一个clusterNode
+ *  当在同一个上下文中多次调用entry方法时，该节点可能下会创建有一系列的子节点
  * <p>
  * A {@link Node} used to hold statistics for specific resource name in the specific context.
  * Each distinct resource in each distinct {@link Context} will corresponding to a {@link DefaultNode}.
@@ -70,6 +71,8 @@ public class DefaultNode extends StatisticNode {
             RecordLog.warn("Trying to add null child to node <{}>, ignored", id.getName());
             return;
         }
+        System.out.println("---是否包含----"+ childList.contains(node));
+
         if (!childList.contains(node)) {
             synchronized (this) {
                 if (!childList.contains(node)) {

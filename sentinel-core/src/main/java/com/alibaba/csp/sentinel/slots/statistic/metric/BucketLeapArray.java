@@ -14,6 +14,8 @@ import com.alibaba.csp.sentinel.slots.statistic.data.MetricBucket;
 public class BucketLeapArray extends LeapArray<MetricBucket> {
 
     public BucketLeapArray(int sampleCount, int intervalInMs) {
+        //窗口的个数
+        //一个用毫秒秒做单位的时间间隔
         super(sampleCount, intervalInMs);
     }
 

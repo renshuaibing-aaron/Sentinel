@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 负责收集资源的路径，并将这些资源的调用路径，以树状结构存储起来，用于根据调用路径来限流降级
+ *    具体的是将资源的调用路径，封装成一个一个的节点，再组成一个树状的结构来形成一个完整的调用链
  * </p>
  * This class will try to build the calling traces via
  * <ol>
@@ -132,6 +134,8 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, Object obj, int count, boolean prioritized, Object... args)
         throws Throwable {
+
+        System.out.println("【NodeSelectorSlot#entry】");
         /*
          * It's interesting that we use context name rather resource name as the map key.
          *
@@ -157,6 +161,7 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
                 node = map.get(context.getName());
                 if (node == null) {
                     // 新创建一个DefaultNode
+                    System.out.println("【新创建一个DefaultNode】");
                     node = new DefaultNode(resourceWrapper, null);
                     HashMap<String, DefaultNode> cacheMap = new HashMap<String, DefaultNode>(map.size());
                     cacheMap.putAll(map);

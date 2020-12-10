@@ -1,8 +1,10 @@
 package com.alibaba.csp.sentinel.slots.statistic.base;
 
 /**
+ * todo
+ *    WindowWrap封装了表示一个时间窗口，它有三个重要的属性
+ *    其内部的数据结构用 MetricBucket 表示
  * Wrapper entity class for a period of time window.
- *WindowWrap封装了表示一个时间窗口，它有三个重要的属性
  * @param <T> data type
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -10,19 +12,20 @@ package com.alibaba.csp.sentinel.slots.statistic.base;
 public class WindowWrap<T> {
 
     /**
-     * // 窗口的长度
+     *  窗口的长度 单位是毫秒
      * Time length of a single window bucket in milliseconds.
      */
     private final long windowLengthInMs;
 
     /**
-     * // 起始毫秒数
+     * 起始毫秒数
      * Start timestamp of the window in milliseconds.
      */
     private long windowStart;
 
     /**
-     * // 指标数据，一般是MetricBucket,
+     * 指标数据，用泛型表示 一般是MetricBucket,
+     * see@MetricBucket
      * Statistic data.
      */
     private T value;

@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.slots.block.flow.controller;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -22,6 +7,7 @@ import com.alibaba.csp.sentinel.node.Node;
 import com.alibaba.csp.sentinel.slots.block.flow.TrafficShapingController;
 
 /**
+ * todo 匀速器模式是让所有的请求匀速的通过，请求进入后可能需要等待，因此如果等待时间超过设置的阈值，那么该请求以拒绝而结束
  * <p>
  * The principle idea comes from Guava. However, the calculation of Guava is
  * rate-based, which means that we need to translate rate to QPS.
@@ -63,13 +49,22 @@ import com.alibaba.csp.sentinel.slots.block.flow.TrafficShapingController;
  */
 public class WarmUpController implements TrafficShapingController {
 
+    // 阈值
     protected double count;
+    // 3
     private int coldFactor;
+    // 转折点的令牌数，和 Guava 的 thresholdPermits 一个意思
+    // [500]
     protected int warningToken = 0;
+    // 最大的令牌数，和 Guava 的 maxPermits 一个意思
+    // [1000]
     private int maxToken;
+    // 斜线斜率
+    // [1/25000]
     protected double slope;
-
+    // 累积的令牌数，和 Guava 的 storedPermits 一个意思
     protected AtomicLong storedTokens = new AtomicLong(0);
+    // 最后更新令牌的时间
     protected AtomicLong lastFilledTime = new AtomicLong(0);
 
     public WarmUpController(double count, int warmUpPeriodInSec, int coldFactor) {
@@ -80,6 +75,7 @@ public class WarmUpController implements TrafficShapingController {
         construct(count, warmUpPeriodInSec, 3);
     }
 
+    //下面的构造方法，和 Guava 中是差不多的，只不过 thresholdPermits 和 maxPermits 都换了个名字
     private void construct(double count, int warmUpPeriodInSec, int coldFactor) {
 
         if (coldFactor <= 1) {

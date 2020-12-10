@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 用于根据预设的限流规则，以及前面 slot 统计的状态，来进行限流
  * <p>
  * Combined the runtime statistics collected from the previous
  * slots (NodeSelectorSlot, ClusterNodeBuilderSlot, and StatisticSlot), FlowSlot

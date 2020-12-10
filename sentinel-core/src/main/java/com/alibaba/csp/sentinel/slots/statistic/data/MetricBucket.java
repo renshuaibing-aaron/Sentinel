@@ -7,6 +7,8 @@ import com.alibaba.csp.sentinel.slots.statistic.base.LongAdder;
 /**
  * Represents metrics data in a period of time span.
  *MetricBucket代表了在某一个时间窗口内的所有数据，如RT、Success、Pass、Block等等。
+ *   实际上就可以理解为一个Widow
+ *   指标桶，例如通过数量、阻塞数量、异常数量、成功数量、响应时间，已通过未来配额（抢占下一个滑动窗口的数量）
  * @author jialiang.linjl
  * @author Eric Zhao
  */
@@ -22,6 +24,7 @@ public class MetricBucket {
     public MetricBucket() {
         MetricEvent[] events = MetricEvent.values();
         this.counters = new LongAdder[events.length];
+
         for (MetricEvent event : events) {
             counters[event.ordinal()] = new LongAdder();
         }

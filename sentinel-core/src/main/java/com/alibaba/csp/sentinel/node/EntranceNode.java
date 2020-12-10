@@ -10,6 +10,8 @@ import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
  *  是全局唯一的，跟entry没有关系，内部自动生成的。每一个context都会对应一个entranceNode,
  *  当然多个context可能对应一个相同的entranceNode。如果没有使用ContextUtil.enter("entrancexxx", "appA");，
  *  则context会指向默认的第一个entranceNode
+ *
+ * 可以看到EntranceNode重写了获取数据统计的方法，获取的时候将所有子节点的数据全累加后返回
  * <p>
  * A {@link Node} represents the entrance of the invocation tree.
  * </p>

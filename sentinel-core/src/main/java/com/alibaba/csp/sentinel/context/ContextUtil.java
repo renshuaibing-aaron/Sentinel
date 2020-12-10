@@ -50,7 +50,7 @@ public class ContextUtil {
     private static void initDefaultContext() {
 
 
-        String defaultContextName = Constants.CONTEXT_DEFAULT_NAME;
+        String defaultContextName = Constants.CONTEXT_DEFAULT_NAME; //sentinel_default_context
         // 构建第一个EntranceNode
         EntranceNode node = new EntranceNode(new StringResourceWrapper(defaultContextName, EntryType.IN), null);
         // 添加至ROOT下
@@ -108,7 +108,7 @@ public class ContextUtil {
 
         return trueEnter(name, origin);
     }
-
+//sentinel_default_context
     protected static Context trueEnter(String name, String origin) {
 
         // contextHolder为保存Conext的ThreadLocal对象
@@ -126,15 +126,17 @@ public class ContextUtil {
                     try {
                         LOCK.lock();
                         node = contextNameNodeMap.get(name);
+                        //注意这个地方其实 这里默认会有值的 看这个类的静态方法
                         if (node == null) {
                             if (contextNameNodeMap.size() > Constants.MAX_CONTEXT_NAME_SIZE) {
                                 setNullContext();
                                 return NULL_CONTEXT;
                             } else {
+                                // 创建一个新的入口节点     sentinel_default_context
                                 node = new EntranceNode(new StringResourceWrapper(name, EntryType.IN), null);
                                 // Add entrance node.
-                                Constants.ROOT.addChild(node);
-
+                                DefaultNode root = Constants.ROOT;
+                                root.addChild(node);
                                 Map<String, DefaultNode> newMap = new HashMap<>(contextNameNodeMap.size() + 1);
                                 newMap.putAll(contextNameNodeMap);
                                 newMap.put(name, node);
@@ -146,7 +148,8 @@ public class ContextUtil {
                     }
                 }
             }
-            // 将获取到的entrancenode用来构造一个Conext
+            // 将获取到的entrancenode用来构造一个Conext 并设置Context的根节点，即设置EntranceNode
+            System.out.println("【新创建一个Context】");
             context = new Context(node, name);
             context.setOrigin(origin);
             contextHolder.set(context);
@@ -195,6 +198,7 @@ public class ContextUtil {
      * ThreadLocal.
      */
     public static void exit() {
+        //ContextUtil#exit很明确，从ThreadLocal中将Context置为null
         Context context = contextHolder.get();
         if (context != null && context.getCurEntry() == null) {
             contextHolder.set(null);

@@ -64,8 +64,9 @@ public class FlowRuleChecker {
 
     public boolean canPassCheck(/*@NonNull*/ FlowRule rule, Context context, DefaultNode node, int acquireCount,
                                                     boolean prioritized) {
-        //// limitApp 默认是一个 “default”
+        //是否有调用方需要被限流，默认情况下limitApp为'default'
         String limitApp = rule.getLimitApp();
+        //正常限流不会触发这种情况
         if (limitApp == null) {
             return true;
         }

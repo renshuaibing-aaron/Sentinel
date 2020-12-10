@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ *
+ * todo 执行具体的资源统计操作
  * <p>The statistic node keep three kinds of real-time statistics metrics:</p>
  * <ol>
  * <li>metrics in second level ({@code rollingCounterInSecond})</li>
@@ -76,11 +78,11 @@ public class StatisticNode implements Node {
 
     /**
      * 是统计一秒内的指标数据数据的
+     * SAMPLE_COUNT=2  INTERVAL=1000
      * Holds statistics of the recent {@code INTERVAL} seconds. The {@code INTERVAL} is divided into time spans
      * by given {@code sampleCount}.
      */
-    private transient volatile Metric rollingCounterInSecond = new ArrayMetric(SampleCountProperty.SAMPLE_COUNT,
-        IntervalProperty.INTERVAL);
+    private transient volatile Metric rollingCounterInSecond = new ArrayMetric(SampleCountProperty.SAMPLE_COUNT,IntervalProperty.INTERVAL);
 
     /**
      * 统计一分钟的数据
@@ -186,6 +188,9 @@ public class StatisticNode implements Node {
 
     @Override
     public double passQps() {
+        // INTERVAL为1
+        //rollingCounterInSecond 在前面说过了，它持有滑动窗口leapArray的引用。
+        // 保存了一秒内的指标数据。数组长度为2。对StatisticNode暴露出查询指标数据的接口
         return rollingCounterInSecond.pass() / rollingCounterInSecond.getWindowIntervalInSec();
     }
 
@@ -232,7 +237,7 @@ public class StatisticNode implements Node {
 
     @Override
     public void addPassRequest(int count) {
-        //统计一秒内的指标数据数据
+        //统计一秒内的指标数据数据  当我们获取到了当前的滑动窗口，对它持有的MetricBucket进行加1操作
         rollingCounterInSecond.addPass(count);
         //统计一分钟的数据
         rollingCounterInMinute.addPass(count);

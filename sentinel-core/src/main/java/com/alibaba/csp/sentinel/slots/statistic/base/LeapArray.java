@@ -10,28 +10,33 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
  * <p>
- * Basic data structure for statistic metrics in Sentinel.
+                 * Basic data structure for statistic metrics in Sentinel.
  * </p>
  * <p>
  * Leap array use sliding window algorithm to count data. Each bucket cover {@code windowLengthInMs} time span,
  * and the total time span is {@link #intervalInMs}, so the total bucket amount is:
  * {@code sampleCount = intervalInMs / windowLengthInMs}.
  * </p>
- *
+ *滑动窗口顶层数据结构，包含一个一个的窗口数据
  * @param <T> type of statistic data
  * @author jialiang.linjl
  * @author Eric Zhao
  * @author Carpenter Lee
  */
 public abstract class LeapArray<T> {
+
     // 单个窗口桶的时间长度(以毫秒为单位)
     protected int windowLengthInMs;
 
     // 数组长度，即窗口的个数
     protected int sampleCount;
-    // LeapArray的总时间跨度，以秒为单位
+
+
+    // LeapArray的总时间跨度，以毫秒为单位
     protected int intervalInMs;
 
+    // 采样的时间窗口数组
+    //用来对时间窗口中的统计值进行采样。通过采样的统计值再计算出平均值，就是我们需要的最终的实时指标的值了
     protected final AtomicReferenceArray<WindowWrap<T>> array;
 
     /**
@@ -41,7 +46,6 @@ public abstract class LeapArray<T> {
 
     /**
      * The total bucket count is: {@code sampleCount = intervalInMs / windowLengthInMs}.
-     *
      * @param sampleCount  bucket count of the sliding window
      * @param intervalInMs the total time interval of this {@link LeapArray} in milliseconds
      */
@@ -49,12 +53,17 @@ public abstract class LeapArray<T> {
         AssertUtil.isTrue(sampleCount > 0, "bucket count is invalid: " + sampleCount);
         AssertUtil.isTrue(intervalInMs > 0, "total time interval of the sliding window should be positive");
         AssertUtil.isTrue(intervalInMs % sampleCount == 0, "time span needs to be evenly divided");
+
+
         // 单个窗口桶的时间长度(以毫秒为单位)
         this.windowLengthInMs = intervalInMs / sampleCount;
-        // LeapArray的总时间跨度，以秒为单位
+
+        // LeapArray的总时间跨度，以毫秒为单位？
         this.intervalInMs = intervalInMs;
-        // 数组长度，即窗口的个数
+
+        // 时间窗口的采样个数，默认为2个采样窗口
         this.sampleCount = sampleCount;
+
         // 数组元素为WindowWrap，WindowWrap保存了MetricBucket，在它内部才保存真正的指标数据
         this.array = new AtomicReferenceArray<>(sampleCount);
     }
@@ -86,7 +95,11 @@ public abstract class LeapArray<T> {
     protected abstract WindowWrap<T> resetWindowTo(WindowWrap<T> windowWrap, long startTime);
 
     private int calculateTimeIdx(/*@Valid*/ long timeMillis) {
+
+        // time每增加一个windowLength的长度，timeId就会增加1，时间窗口就会往前滑动一个
         long timeId = timeMillis / windowLengthInMs;
+
+        // idx被分成[0,arrayLength-1]中的某一个数，作为array数组中的索引
         // Calculate current index so we can map the timestamp to the leap array.
         return (int)(timeId % array.length());
     }
@@ -105,21 +118,40 @@ public abstract class LeapArray<T> {
         if (timeMillis < 0) {
             return null;
         }
-
+        // 当前时间滑动出口数组的下标
+        //根据当前时间，算出该时间的timeId，并根据timeId算出当前窗口在采样窗口数组中的索引idx
         int idx = calculateTimeIdx(timeMillis);
+
+        /**
+         * 另外timeId是会随着时间的增长而增加，当前时间每增长一个windowLength的长度，timeId就加1。
+         * 但是idx不会增长，只会在0和1之间变换，因为array数组的长度是2，只有两个采样时间窗口。
+         * 至于为什么默认只有两个采样窗口，个人觉得因为sentinel是比较轻量的框架。
+         * 时间窗口中保存着很多统计数据，如果时间窗口过多的话，一方面会占用过多内存，
+         * 另一方面时间窗口过多就意味着时间窗口的长度会变小，如果时间窗口长度变小，就会导致时间窗口过于频繁的滑动
+         *
+         */
+
+
+        // 计算出当前窗口的起始时间
         // Calculate current bucket start time.
         long windowStart = calculateWindowStart(timeMillis);
 
         /*
+         * 循环判断直到获取到一个当前时间窗口
          * Get bucket item at given time from the array.
-         *
          * (1) Bucket is absent, then just create a new bucket and CAS update to circular array.
          * (2) Bucket is up-to-date, then just return the bucket.
          * (3) Bucket is deprecated, then reset current bucket and clean all deprecated buckets.
          */
         while (true) {
+            //根据索引idx，在采样窗口数组中取得一个时间窗口old
+            // array数组长度不宜过大，否则old很多情况下都命中不了，就会创建很多个WindowWrap对象
             WindowWrap<T> old = array.get(idx);
+
             if (old == null) {
+
+                // 如果获取到的WindowWrap为空，则新创建一个，第三个参数是创建一个空的Bucket
+                // 并将它插入到array的第idx个位置，array上面已经分析过了，是一个 AtomicReferenceArray
                 /*
                  *     B0       B1      B2    NULL      B4
                  * ||_______|_______|_______|_______|_______||___
@@ -133,13 +165,17 @@ public abstract class LeapArray<T> {
                  * succeed to update, while other threads yield its time slice.
                  */
                 WindowWrap<T> window = new WindowWrap<T>(windowLengthInMs, windowStart, newEmptyBucket(timeMillis));
+                // 通过CAS将新窗口设置到数组中去
                 if (array.compareAndSet(idx, null, window)) {
                     // Successfully updated, return the created bucket.
+                    // 如果能设置成功，则将该窗口返回
                     return window;
                 } else {
+                    // 设置失败，当前线程让出时间片等待
                     // Contention failed, the thread will yield its time slice to wait for bucket available.
                     Thread.yield();
                 }
+                // 如果当前窗口的开始时间与old的开始时间相等，则直接返回old窗口
             } else if (windowStart == old.windowStart()) {
                 /*
                  *     B0       B1      B2     B3      B4
@@ -153,6 +189,9 @@ public abstract class LeapArray<T> {
                  * that means the time is within the bucket, so directly return the bucket.
                  */
                 return old;
+
+                // 如果当前时间窗口的开始时间已经超过了old窗口的开始时间，则放弃old窗口
+                // 并将time设置为新的时间窗口的开始时间，此时窗口向前滑动
             } else if (windowStart > old.windowStart()) {
                 /*
                  *   (old)
@@ -182,6 +221,8 @@ public abstract class LeapArray<T> {
                     // Contention failed, the thread will yield its time slice to wait for bucket available.
                     Thread.yield();
                 }
+
+                // 这个条件不可能存在 因为time是当前时间，old是过去的一个时间
             } else if (windowStart < old.windowStart()) {
                 // Should not go through here, as the provided time is already behind.
                 return new WindowWrap<T>(windowLengthInMs, windowStart, newEmptyBucket(timeMillis));

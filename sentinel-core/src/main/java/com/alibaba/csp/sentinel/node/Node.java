@@ -12,7 +12,7 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
  *
  * todo node中保存了资源的实时统计数据
  * Holds real-time statistics for resources.
- *
+ *     一共四种node
  * @author qinan.qn
  * @author leyou
  * @author Eric Zhao

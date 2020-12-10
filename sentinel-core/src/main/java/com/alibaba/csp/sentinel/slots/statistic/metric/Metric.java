@@ -9,6 +9,7 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 /**
  *
  * metric是sentinel中用来进行实时数据统计的度量接口，node就是通过metric来进行数据统计的。
+ * 主要定义一个滑动窗口中成功的数量、异常数量、阻塞数量，TPS、响应时间等数据
  * Represents a basic structure recording invocation metrics of protected resources.
  *
  * @author jialiang.linjl

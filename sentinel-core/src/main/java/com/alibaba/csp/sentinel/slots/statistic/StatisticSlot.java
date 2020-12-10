@@ -18,6 +18,8 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
+ * 统计资源的实时数据
+ * 用于记录，统计不同维度的 runtime 信息
  * <p>
  * A processor slot that dedicates to real time statistics.
  * When entering this slot, we need to separately count the following
@@ -36,6 +38,17 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 @SpiOrder(-7000)
 public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
 
+    /**
+     *StatisticSlot的作用是统计资源的实时数据，请求经过这里，
+     * 然后FlowSlot根据规则进行匹配对比，决定是放行还是限制。当返回之后，StatisticSlot统计请求的信息
+     * @param context         current {@link Context}
+     * @param resourceWrapper current resource
+     * @param node
+     * @param count           tokens needed
+     * @param prioritized     whether the entry is prioritized
+     * @param args            parameters of the original call
+     * @throws Throwable
+     */
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, DefaultNode node, int count,
                       boolean prioritized, Object... args) throws Throwable {
@@ -53,6 +66,7 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
             // 增加每秒的请求数
             node.addPassRequest(count);
 
+            // 如果在调用entry之前指定了调用的origin，即调用方
             if (context.getCurEntry().getOriginNode() != null) {
                 // Add count for origin node.
                 // 如果OriginNod（调用方）不为空，同样增加线程数和请求数，没有调用ContextUtil.enter，OriginNode为空
@@ -137,18 +151,20 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
                 rt = maxStatisticRt;
             }
 
+            // 统计rt
             // Record response time and success count.
             node.addRtAndSuccess(rt, count);
             if (context.getCurEntry().getOriginNode() != null) {
                 context.getCurEntry().getOriginNode().addRtAndSuccess(rt, count);
             }
-
+            // 减少线程数
             node.decreaseThreadNum();
+
 
             if (context.getCurEntry().getOriginNode() != null) {
                 context.getCurEntry().getOriginNode().decreaseThreadNum();
             }
-
+            // 全局统计
             if (resourceWrapper.getEntryType() == EntryType.IN) {
                 Constants.ENTRY_NODE.addRtAndSuccess(rt, count);
                 Constants.ENTRY_NODE.decreaseThreadNum();

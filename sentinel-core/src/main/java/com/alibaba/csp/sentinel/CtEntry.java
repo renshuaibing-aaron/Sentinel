@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel;
 
 import com.alibaba.csp.sentinel.context.Context;
@@ -64,7 +49,16 @@ class CtEntry extends Entry {
         trueExit(count, args);
     }
 
+    /**
+     * 通知slotChain，Entry退出了，其中重点是在StatisticSlot#exit方法中。
+     * 如果当前Entry的父Entry为null时，删除context
+     * @param context
+     * @param count
+     * @param args
+     * @throws ErrorEntryFreeException
+     */
     protected void exitForContext(Context context, int count, Object... args) throws ErrorEntryFreeException {
+        System.out.println("【CtEntry#exitForContext】");
         if (context != null) {
             // Null context should exit without clean-up.
             if (context instanceof NullContext) {
@@ -86,11 +80,13 @@ class CtEntry extends Entry {
                     chain.exit(context, resourceWrapper, count, args);
                 }
                 // Restore the call stack.
+                // 设置CurEntry为Eenry的父亲
                 context.setCurEntry(parent);
                 if (parent != null) {
-                    ((CtEntry)parent).child = null;
+                    ((CtEntry)parent).child = null; // 将父Entry节点的child 置为null
                 }
                 if (parent == null) {
+                    //当前Entry的父Entry为null时，此时说明该Entry已经是最顶层的根节点了，可以清除context（ThreadLocal中）
                     // Default context (auto entered) will be exited automatically.
                     if (ContextUtil.isDefaultContext(context)) {
                         ContextUtil.exit();

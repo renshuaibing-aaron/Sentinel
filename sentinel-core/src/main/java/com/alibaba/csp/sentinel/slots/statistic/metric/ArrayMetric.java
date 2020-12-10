@@ -14,15 +14,26 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
  * The basic metric class in Sentinel using a {@link BucketLeapArray} internal.
- *它相当于是对底层指标的代理封装
+ *   它相当于是对底层指标的代理封装 滑动窗口核心实现类
  * @author jialiang.linjl
  * @author Eric Zhao
  */
 public class ArrayMetric implements Metric {
 
+    //ArrayMetric 类唯一的属性，用来存储各个窗口的数据
     private final LeapArray<MetricBucket> data;
 
+
+    //ArrayMetric 将真正的信息放在LeapArray<MetricBucket> data 里面 创建这个需要两个参数
+    //滑动窗口的个数 2个 ,整个统计的时常毫秒为单位
+    /**
+     *
+     * @param sampleCount 在一个采集间隔中抽样的个数，默认为 2，例如当 intervalInMs = 1000时，抽象两次，
+     *                    则一个采集间隔中会包含两个相等的区间，一个区间就是滑动窗口
+     * @param intervalInMs  表示一个采集的时间间隔，例如1秒，1分钟
+     */
     public ArrayMetric(int sampleCount, int intervalInMs) {
+        // SAMPLE_COUNT=2  INTERVAL=1000
         this.data = new OccupiableBucketLeapArray(sampleCount, intervalInMs);
     }
 
@@ -31,7 +42,8 @@ public class ArrayMetric implements Metric {
      * 简单的说是一个数组,数组元素是WindowWrap(窗口桶)。这两个类都继承自LeapArray类
      * @param sampleCount
      * @param intervalInMs
-     * @param enableOccupy
+     * @param enableOccupy 是否允许抢占，即当前时间戳已经达到限制后，是否可以占用下一个时间窗口的容量，
+     *                     这里对应 LeapArray 的两个实现类，如果允许抢占，则为 OccupiableBucketLeapArray，否则为 BucketLeapArray
      */
     public ArrayMetric(int sampleCount, int intervalInMs, boolean enableOccupy) {
         if (enableOccupy) {
@@ -98,10 +110,11 @@ public class ArrayMetric implements Metric {
 
     @Override
     public long pass() {
-        data.currentWindow();
+        data.currentWindow(); // 这里的作用是刷新窗口 避免获取过期的数据。
         long pass = 0;
+        // 获取数组中所有WindoWrap关联的MetricBucket
         List<MetricBucket> list = data.values();
-
+        // 遍历所有MetricBucket，获取pass数量
         for (MetricBucket window : list) {
             pass += window.pass();
         }
@@ -234,7 +247,7 @@ public class ArrayMetric implements Metric {
     @Override
     public void addPass(int count) {
         System.out.println("【addPass】");
-        // 获取当前窗口
+        // 获取当前窗口  窗口的大小是sampleCount=2
         WindowWrap<MetricBucket> wrap = data.currentWindow();
         //对MetricBucket +1 操作
         wrap.value().addPass(count);

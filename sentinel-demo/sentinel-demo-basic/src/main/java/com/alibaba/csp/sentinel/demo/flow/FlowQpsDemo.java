@@ -27,6 +27,7 @@ public class FlowQpsDemo {
     private static AtomicInteger pass = new AtomicInteger();
     private static AtomicInteger block = new AtomicInteger();
     private static AtomicInteger total = new AtomicInteger();
+    private static AtomicInteger num = new AtomicInteger();
 
     private static volatile boolean stop = false;
 
@@ -58,7 +59,7 @@ public class FlowQpsDemo {
 
         //count是限流阈值，当我们定义的是流量控制规则是根据QPS进行限流时，它表示QPS的阈值，当然如果是根据线程数限流，它表示线程数。
         // set limit qps to 20
-        rule1.setCount(20);
+        rule1.setCount(1);
 
 
         // 设置限流类型：根据qps
@@ -79,7 +80,7 @@ public class FlowQpsDemo {
     }
 
     private static void simulateTraffic() {
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 2; i++) {
             Thread t = new Thread(new RunTask());
             t.setName("simulate-traffic-Task");
             t.start();
@@ -155,6 +156,7 @@ public class FlowQpsDemo {
                     // biz exception
                 } finally {
                     total.incrementAndGet();
+                    num.incrementAndGet();
                     if (entry != null) {
                         entry.exit();
                     }
@@ -166,7 +168,9 @@ public class FlowQpsDemo {
                 } catch (InterruptedException e) {
                     // ignore
                 }
-                stop=true;
+              /*  if(num.get()==2){
+                    stop=true;
+                }*/
             }
         }
     }

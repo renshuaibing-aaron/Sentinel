@@ -1,18 +1,3 @@
-/*
- * Copyright 1999-2018 Alibaba Group Holding Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.csp.sentinel.slots.block.flow.controller;
 
 import com.alibaba.csp.sentinel.node.Node;
@@ -23,6 +8,7 @@ import com.alibaba.csp.sentinel.slots.block.flow.TrafficShapingController;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
+ * todo 默认的流控方式，如果达到阈值直接拒绝请求
  * Default throttling controller (immediately reject strategy).
  *
  * @author jialiang.linjl
@@ -47,7 +33,11 @@ public class DefaultController implements TrafficShapingController {
 
     @Override
     public boolean canPass(Node node, int acquireCount, boolean prioritized) {
+
+        System.out.println("【DefaultController#canPass】");
+        // 获取当前请求数量
         int curCount = avgUsedTokens(node);
+        // 如果当前数量加上本次请求的个数大于阈值，返回false
         if (curCount + acquireCount > count) {
             if (prioritized && grade == RuleConstant.FLOW_GRADE_QPS) {
                 long currentTime;
@@ -72,7 +62,10 @@ public class DefaultController implements TrafficShapingController {
         if (node == null) {
             return DEFAULT_AVG_USED_TOKENS;
         }
-        return grade == RuleConstant.FLOW_GRADE_THREAD ? node.curThreadNum() : (int)(node.passQps());
+        // 如果根据QPS进行限流，调用clusterNode的passQps
+        //如果按照并发线程数限流则返回统计中的线程数目
+        //否则就返回现在已经pass的Qps数目
+        return grade == RuleConstant.FLOW_GRADE_THREAD ? node.curThreadNum() : (int)(node.passQps());  //实现在StatisticNode类中
     }
 
     private void sleep(long timeMillis) {

@@ -18,6 +18,7 @@ import com.alibaba.csp.sentinel.slotchain.StringResourceWrapper;
 import com.alibaba.csp.sentinel.spi.SpiOrder;
 
 /**
+ * todo 用于存储资源的统计信息以及调用者信息，例如该资源的 RT, QPS, thread count 等等，这些信息将用作为多维度限流，降级的依据
  * <p>
  * This slot maintains resource running statistics (response time, qps, thread
  * count, exception), and a list of callers as well which is marked by

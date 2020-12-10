@@ -14,7 +14,7 @@ import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
  *   而是内部ContextUtil的一个子类创建，这是默认的内部创建方式，为一次访问资源创建上下文。
  *   Context是保存在ThradLocal中。可以把Conetext理解当一次访问资源的过程。Context中维护着当前调用链的元数据
  * This class holds metadata of current invocation:<br/>
- *
+ *   这个是不是跟线程进行绑定的
  * <ul>
  * <li>the {@link EntranceNode}: the root of the current invocation
  * tree.</li>
